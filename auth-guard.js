@@ -27,7 +27,7 @@ async function verifyAccess() {
       return;
     }
 
-    document.body.hidden = false;
+    document.body.style.visibility = "visible";
   } catch {
     location.replace(loginUrl.href);
   }
