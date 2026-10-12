@@ -1,8 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1">
   <title>Connexion — Paie Taïwan</title>
   <style>
     body {
@@ -30,7 +32,9 @@
       border: 0;
       border-radius: 8px;
     }
+    button:disabled { opacity: 0.6; }
     #message { margin-top: 16px; }
+    #logout { background: #555; }
   </style>
 </head>
 <body>
@@ -42,26 +46,111 @@
       <input id="email" type="email"
              placeholder="Adresse e-mail"
              autocomplete="username" required>
-
       <input id="password" type="password"
              placeholder="Mot de passe"
              autocomplete="current-password" required>
-
-      <button type="submit">Se connecter</button>
+      <button id="submit" type="submit">
+        Se connecter
+      </button>
     </form>
 
-    <p id="message"></p>
+    <button id="logout" hidden>
+      Se déconnecter
+    </button>
+    <p id="message" role="status"></p>
   </main>
 
-  <script>
-    document.getElementById("loginForm")
-      .addEventListener("submit", function(event) {
-        event.preventDefault();
-        document.getElementById("message")
-          .textContent =
-          "Page prête. Connexion Supabase à configurer.";
-      });
+  <script type="module">
+    import { createClient } from
+      "https://esm.sh/@supabase/supabase-js@2";
+
+    // Remplacer uniquement ces deux valeurs.
+    const SUPABASE_URL =
+      "https://https://sjsdmzvmuugrpxewhflz.supabase.co";
+
+    const SUPABASE_KEY =
+      "sb_publishable_k_H4nkAEc2tzmppak1h8ww_nz2T8kbB";
+
+    const supabase = createClient(
+      SUPABASE_URL,
+      SUPABASE_KEY
+    );
+
+    const form = document.getElementById("loginForm");
+    const message = document.getElementById("message");
+    const logout = document.getElementById("logout");
+    const submit = document.getElementById("submit");
+
+    async function updateView() {
+      const { data: { user }, error } =
+        await supabase.auth.getUser();
+
+      if (error || !user) {
+        form.hidden = false;
+        logout.hidden = true;
+        return;
+      }
+
+      // Contrôle du rôle administrateur
+      const { data: isAdmin, error: roleError } =
+        await supabase.rpc("is_payroll_admin");
+
+      if (roleError || isAdmin !== true) {
+        await supabase.auth.signOut();
+        form.hidden = false;
+        logout.hidden = true;
+        message.textContent =
+          "Compte non autorisé.";
+        return;
+      }
+
+      form.hidden = true;
+      logout.hidden = false;
+      message.textContent =
+        "Connexion administrateur réussie.";
+    }
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      submit.disabled = true;
+      message.textContent = "Connexion en cours…";
+
+      try {
+        const email =
+          document.getElementById("email").value;
+        const password =
+          document.getElementById("password").value;
+
+        const { error } =
+          await supabase.auth.signInWithPassword({
+            email,
+            password
+          });
+
+        if (error) {
+          message.textContent =
+            "Connexion impossible. Vérifie tes identifiants.";
+        } else {
+          await updateView();
+        }
+      } catch {
+        message.textContent =
+          "Erreur de connexion au serveur.";
+      } finally {
+        submit.disabled = false;
+      }
+    });
+
+    logout.addEventListener("click", async () => {
+      await supabase.auth.signOut();
+      message.textContent = "Déconnecté.";
+      await updateView();
+    });
+
+    updateView().catch(() => {
+      message.textContent =
+        "Impossible de vérifier la session.";
+    });
   </script>
 </body>
 </html>
-
