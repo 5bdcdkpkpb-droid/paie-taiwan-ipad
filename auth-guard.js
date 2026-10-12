@@ -33,5 +33,4 @@ async function verifyAccess() {
   }
 }
 
-document.body.hidden = true;
 await verifyAccess();
