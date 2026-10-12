@@ -1,1 +1,67 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Connexion — Paie Taïwan</title>
+  <style>
+    body {
+      font-family: -apple-system, sans-serif;
+      background: #f3f5f8;
+      padding: 24px;
+    }
+    main {
+      max-width: 400px;
+      margin: 60px auto;
+      background: white;
+      padding: 28px;
+      border-radius: 16px;
+    }
+    input, button {
+      box-sizing: border-box;
+      width: 100%;
+      padding: 14px;
+      margin-top: 12px;
+      font-size: 16px;
+    }
+    button {
+      background: #176b55;
+      color: white;
+      border: 0;
+      border-radius: 8px;
+    }
+    #message { margin-top: 16px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h2>Paie Taïwan</h2>
+    <p>Connexion administrateur</p>
+
+    <form id="loginForm">
+      <input id="email" type="email"
+             placeholder="Adresse e-mail"
+             autocomplete="username" required>
+
+      <input id="password" type="password"
+             placeholder="Mot de passe"
+             autocomplete="current-password" required>
+
+      <button type="submit">Se connecter</button>
+    </form>
+
+    <p id="message"></p>
+  </main>
+
+  <script>
+    document.getElementById("loginForm")
+      .addEventListener("submit", function(event) {
+        event.preventDefault();
+        document.getElementById("message")
+          .textContent =
+          "Page prête. Connexion Supabase à configurer.";
+      });
+  </script>
+</body>
+</html>
 
