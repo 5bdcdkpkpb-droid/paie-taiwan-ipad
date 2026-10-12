@@ -2,155 +2,254 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport"
-        content="width=device-width, initial-scale=1">
-  <title>Connexion — Paie Taïwan</title>
-  <style>
-    body {
-      font-family: -apple-system, sans-serif;
-      background: #f3f5f8;
-      padding: 24px;
-    }
-    main {
-      max-width: 400px;
-      margin: 60px auto;
-      background: white;
-      padding: 28px;
-      border-radius: 16px;
-    }
-    input, button {
-      box-sizing: border-box;
-      width: 100%;
-      padding: 14px;
-      margin-top: 12px;
-      font-size: 16px;
-    }
-    button {
-      background: #176b55;
-      color: white;
-      border: 0;
-      border-radius: 8px;
-    }
-    button:disabled { opacity: 0.6; }
-    #message { margin-top: 16px; }
-    #logout { background: #555; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Paie Taïwan — Connexion</title>
+<style>
+  body {
+    font-family: -apple-system, sans-serif;
+    background: #f3f5f8;
+    padding: 24px;
+  }
+  main {
+    max-width: 420px;
+    margin: 60px auto;
+    padding: 28px;
+    background: white;
+    border-radius: 16px;
+  }
+  input, button {
+    box-sizing: border-box;
+    display: block;
+    width: 100%;
+    padding: 14px;
+    margin: 12px 0;
+    font-size: 16px;
+    border-radius: 8px;
+  }
+  input { border: 1px solid #ccc; }
+  button {
+    background: #176b55;
+    color: white;
+    border: none;
+    cursor: pointer;
+  }
+  button:disabled { opacity: .6; }
+  [hidden] { display: none !important; }
+  #message { overflow-wrap: anywhere; }
+</style>
 </head>
 <body>
-  <main>
-    <h2>Paie Taïwan</h2>
-    <p>Connexion administrateur</p>
+<main>
+  <h2>Paie Taïwan</h2>
 
+  <section id="loginSection">
+    <p>Connexion administrateur</p>
     <form id="loginForm">
       <input id="email" type="email"
-             placeholder="Adresse e-mail"
-             autocomplete="username" required>
+        placeholder="Adresse e-mail"
+        autocomplete="username" required>
       <input id="password" type="password"
-             placeholder="Mot de passe"
-             autocomplete="current-password" required>
-      <button id="submit" type="submit">
-        Se connecter
+        placeholder="Mot de passe"
+        autocomplete="current-password" required>
+      <button type="submit">Se connecter</button>
+    </form>
+  </section>
+
+  <section id="resetSection" hidden>
+    <h3>Définir un nouveau mot de passe</h3>
+    <form id="resetForm">
+      <input id="newPassword" type="password"
+        placeholder="Nouveau mot de passe"
+        autocomplete="new-password"
+        minlength="12" required>
+      <input id="confirmPassword" type="password"
+        placeholder="Confirmer le mot de passe"
+        autocomplete="new-password"
+        minlength="12" required>
+      <button type="submit">
+        Enregistrer le nouveau mot de passe
       </button>
     </form>
+  </section>
 
-    <button id="logout" hidden>
-      Se déconnecter
-    </button>
-    <p id="message" role="status"></p>
-  </main>
+  <section id="connectedSection" hidden>
+    <p>Connexion administrateur réussie.</p>
+    <button id="logout">Se déconnecter</button>
+  </section>
 
-  <script type="module">
-    import { createClient } from
-      "https://esm.sh/@supabase/supabase-js@2";
+  <p id="message" role="status"></p>
+</main>
 
-    // Remplacer uniquement ces deux valeurs.
-    const SUPABASE_URL =
-      "https://https://sjsdmzvmuugrpxewhflz.supabase.co";
+<script type="module">
+import { createClient } from
+  "https://esm.sh/@supabase/supabase-js@2";
 
-    const SUPABASE_KEY =
-      "sb_publishable_k_H4nkAEc2tzmppak1h8ww_nz2T8kbB";
+// REMPLACER PAR TES DEUX VALEURS
+const SUPABASE_URL =
+  "https://sjsdmzvmuugrpxewhflz.supabase.co";
 
-    const supabase = createClient(
-      SUPABASE_URL,
-      SUPABASE_KEY
-    );
+const SUPABASE_KEY =
+  "sb_publishable_k_H4nkAEc2tzmppak1h8ww_nz2T8kbB";
 
-    const form = document.getElementById("loginForm");
-    const message = document.getElementById("message");
-    const logout = document.getElementById("logout");
-    const submit = document.getElementById("submit");
+const supabase = createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY
+);
 
-    async function updateView() {
-      const { data: { user }, error } =
-        await supabase.auth.getUser();
+const loginSection =
+  document.getElementById("loginSection");
+const resetSection =
+  document.getElementById("resetSection");
+const connectedSection =
+  document.getElementById("connectedSection");
+const message =
+  document.getElementById("message");
 
-      if (error || !user) {
-        form.hidden = false;
-        logout.hidden = true;
-        return;
-      }
+let recoveryMode = false;
 
-      // Contrôle du rôle administrateur
-      const { data: isAdmin, error: roleError } =
-        await supabase.rpc("is_payroll_admin");
+function show(section) {
+  loginSection.hidden = section !== "login";
+  resetSection.hidden = section !== "reset";
+  connectedSection.hidden = section !== "connected";
+}
 
-      if (roleError || isAdmin !== true) {
-        await supabase.auth.signOut();
-        form.hidden = false;
-        logout.hidden = true;
+async function verifyAdmin() {
+  const { data: { user }, error } =
+    await supabase.auth.getUser();
+
+  if (error || !user) {
+    show("login");
+    return;
+  }
+
+  const { data: isAdmin, error: roleError } =
+    await supabase.rpc("is_payroll_admin");
+
+  if (roleError || isAdmin !== true) {
+    await supabase.auth.signOut();
+    show("login");
+    message.textContent =
+      "Compte non autorisé.";
+    return;
+  }
+
+  show("connected");
+  message.textContent = "";
+}
+
+supabase.auth.onAuthStateChange((event) => {
+  if (event === "PASSWORD_RECOVERY") {
+    recoveryMode = true;
+    show("reset");
+    message.textContent =
+      "Choisis un nouveau mot de passe.";
+  }
+});
+
+document.getElementById("loginForm")
+  .addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const button = event.submitter;
+    button.disabled = true;
+    message.textContent = "Connexion en cours…";
+
+    try {
+      const email =
+        document.getElementById("email").value;
+      const password =
+        document.getElementById("password").value;
+
+      const { error } =
+        await supabase.auth.signInWithPassword({
+          email, password
+        });
+
+      if (error) {
         message.textContent =
-          "Compte non autorisé.";
-        return;
+          "Connexion impossible. Vérifie tes identifiants.";
+      } else {
+        await verifyAdmin();
       }
-
-      form.hidden = true;
-      logout.hidden = false;
+    } catch {
       message.textContent =
-        "Connexion administrateur réussie.";
+        "Erreur de connexion.";
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+document.getElementById("resetForm")
+  .addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    if (!recoveryMode) {
+      message.textContent =
+        "Ouvre d'abord un lien de récupération valide.";
+      return;
     }
 
-    form.addEventListener("submit", async (event) => {
-      event.preventDefault();
-      submit.disabled = true;
-      message.textContent = "Connexion en cours…";
+    const password =
+      document.getElementById("newPassword").value;
+    const confirmation =
+      document.getElementById("confirmPassword").value;
 
-      try {
-        const email =
-          document.getElementById("email").value;
-        const password =
-          document.getElementById("password").value;
-
-        const { error } =
-          await supabase.auth.signInWithPassword({
-            email,
-            password
-          });
-
-        if (error) {
-          message.textContent =
-            "Connexion impossible. Vérifie tes identifiants.";
-        } else {
-          await updateView();
-        }
-      } catch {
-        message.textContent =
-          "Erreur de connexion au serveur.";
-      } finally {
-        submit.disabled = false;
-      }
-    });
-
-    logout.addEventListener("click", async () => {
-      await supabase.auth.signOut();
-      message.textContent = "Déconnecté.";
-      await updateView();
-    });
-
-    updateView().catch(() => {
+    if (password !== confirmation) {
       message.textContent =
-        "Impossible de vérifier la session.";
-    });
-  </script>
+        "Les mots de passe ne correspondent pas.";
+      return;
+    }
+
+    const button = event.submitter;
+    button.disabled = true;
+
+    try {
+      const { data: { user } } =
+        await supabase.auth.getUser();
+
+      if (!user) {
+        throw new Error("Session expirée");
+      }
+
+      const { error } =
+        await supabase.auth.updateUser({
+          password
+        });
+
+      if (error) throw error;
+
+      recoveryMode = false;
+      await supabase.auth.signOut();
+      show("login");
+      message.textContent =
+        "Mot de passe modifié. Connecte-toi.";
+    } catch {
+      message.textContent =
+        "Réinitialisation impossible. Demande un nouveau lien.";
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+document.getElementById("logout")
+  .addEventListener("click", async () => {
+    await supabase.auth.signOut();
+    show("login");
+    message.textContent = "Déconnecté.";
+  });
+
+async function initialize() {
+  // Laisser Supabase traiter le lien de récupération.
+  await new Promise(resolve => setTimeout(resolve, 800));
+  if (!recoveryMode) {
+    await verifyAdmin();
+  }
+}
+
+initialize().catch(() => {
+  message.textContent =
+    "Impossible de vérifier la session.";
+});
+</script>
 </body>
 </html>
