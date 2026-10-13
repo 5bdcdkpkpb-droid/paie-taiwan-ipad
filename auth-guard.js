@@ -34,3 +34,24 @@ async function verifyAccess() {
 }
 
 await verifyAccess();
+
+const logoutButton = document.getElementById("logoutButton");
+
+if (logoutButton) {
+  logoutButton.addEventListener("click", async () => {
+    logoutButton.disabled = true;
+    logoutButton.textContent = "Déconnexion…";
+
+    const { error } = await supabase.auth.signOut();
+
+    if (error) {
+      logoutButton.disabled = false;
+      logoutButton.textContent = "Se déconnecter";
+      alert("Déconnexion impossible. Réessaie.");
+      return;
+    }
+
+    window.location.replace("./login.html");
+  });
+}
+
