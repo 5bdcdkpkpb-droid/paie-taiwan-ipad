@@ -134,8 +134,7 @@ async function verifyAdmin() {
     return;
   }
 
-  show("connected");
-  message.textContent = "";
+  window.location.replace(".index.html");
 }
 
 supabase.auth.onAuthStateChange((event) => {
