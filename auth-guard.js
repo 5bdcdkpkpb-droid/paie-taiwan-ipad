@@ -9,7 +9,20 @@ const supabase = createClient(
 
 const loginUrl = new URL("./login.html", location.href);
 
+
 async function verifyAccess() {
+  function showError(message) {
+    document.body.style.visibility = "visible";
+    document.body.innerHTML = `
+      <main style="display:block;padding:30px;font-family:sans-serif">
+        <h2>Diagnostic de connexion</h2>
+        <p id="diagnosticMessage"></p>
+        <p>Actualise la page pour réessayer.</p>
+      </main>
+    `;
+    document.getElementById("diagnosticMessage").textContent = message;
+  }
+
   try {
     const { data: { user }, error } =
       await supabase.auth.getUser();
@@ -22,14 +35,19 @@ async function verifyAccess() {
     const { data: isAdmin, error: roleError } =
       await supabase.rpc("is_payroll_admin");
 
-    if (roleError || isAdmin !== true) {
-      location.replace(loginUrl.href);
+    if (roleError) {
+      showError("Erreur Supabase : " + roleError.message);
+      return;
+    }
+
+    if (isAdmin !== true) {
+      showError("Compte connecté, mais accès administrateur non autorisé.");
       return;
     }
 
     document.body.style.visibility = "visible";
-  } catch {
-    location.replace(loginUrl.href);
+  } catch (err) {
+    showError("Erreur technique : " + String(err));
   }
 }
 
